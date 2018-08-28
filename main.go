@@ -15,6 +15,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -51,19 +52,24 @@ func main() {
 	}
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.Mkdir(path, 755)
+		os.Mkdir(path, 0755)
 	}
 
 	counter := len(parrotData.Emojis)
 	done := make(chan string)
 
 	for _, emoji := range parrotData.Emojis {
+		time.Sleep(40 * time.Millisecond)
 		go func(emoji Emoji, done chan string) {
 			fmt.Printf("Fetching %v...\n", emoji.Fullname)
 
 			resp, err := http.Get(emoji.Src)
+			if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+				done <- fmt.Sprintf("Error fetching %v CODE: %v URL: %v ", emoji.Name, resp.StatusCode, emoji.Src)
+				return
+			}
 			if err != nil {
-				done <- fmt.Sprintf("Error fetching gif for %v", emoji.Name)
+				done <- fmt.Sprintf("Error fetching %v", emoji.Name)
 				return
 			}
 
