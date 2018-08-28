@@ -33,17 +33,21 @@ type Emoji struct {
 func main() {
 	parrotData := ParrotsData{}
 	path := "./img/"
+
+	if len(os.Args) < 2 {
+		log.Fatal("Please point parrot file as command argument")
+	}
 	parrotFile := os.Args[1]
 
 	data, err := ioutil.ReadFile(parrotFile)
 
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		log.Fatal(fmt.Sprintf("Error reading file %v \nError: %v", parrotFile, err))
 	}
 
 	err = yaml.Unmarshal([]byte(data), &parrotData)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		log.Fatal(fmt.Sprintf("Error unmarshaling file %v \nError: %v", parrotFile, err))
 	}
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -57,10 +61,16 @@ func main() {
 		go func(emoji Emoji, done chan string) {
 			fmt.Printf("Fetching %v...\n", emoji.Fullname)
 
-			resp, _ := http.Get(emoji.Src)
+			resp, err := http.Get(emoji.Src)
+			if err != nil {
+				done <- fmt.Sprintf("Error fetching gif for %v", emoji.Name)
+				return
+			}
+
 			f, err := os.Create(path + emoji.Name + ".gif")
 			if err != nil {
-				log.Fatalf("error: %v", err)
+				done <- fmt.Sprintf("Error creating file for %v", emoji.Name)
+				return
 			}
 			defer f.Close()
 
