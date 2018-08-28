@@ -31,9 +31,12 @@ type Emoji struct {
 	Fullname string
 }
 
+const (
+	ParrotDirectory = "./img/"
+)
+
 func main() {
 	parrotData := ParrotsData{}
-	path := "./img/"
 
 	if len(os.Args) < 2 {
 		log.Fatal("Please point parrot file as command argument")
@@ -51,15 +54,14 @@ func main() {
 		log.Fatal(fmt.Sprintf("Error unmarshaling file %v \nError: %v", parrotFile, err))
 	}
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.Mkdir(path, 0755)
+	if _, err := os.Stat(ParrotDirectory); os.IsNotExist(err) {
+		os.Mkdir(ParrotDirectory, 0755)
 	}
 
-	counter := len(parrotData.Emojis)
 	done := make(chan string)
 
 	for _, emoji := range parrotData.Emojis {
-		time.Sleep(40 * time.Millisecond)
+		time.Sleep(35 * time.Millisecond)
 		go func(emoji Emoji, done chan string) {
 			fmt.Printf("Fetching %v...\n", emoji.Fullname)
 
@@ -73,7 +75,7 @@ func main() {
 				return
 			}
 
-			f, err := os.Create(path + emoji.Name + ".gif")
+			f, err := os.Create(ParrotDirectory + emoji.Name + ".gif")
 			if err != nil {
 				done <- fmt.Sprintf("Error creating file for %v", emoji.Name)
 				return
@@ -93,7 +95,9 @@ func main() {
 		}(emoji, done)
 	}
 
-	for i := 0; i < counter; i++ {
+	for i := 0; i < len(parrotData.Emojis); i++ {
 		println(<-done)
 	}
+
+	runServer()
 }
